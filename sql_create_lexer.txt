@@ -1,0 +1,109 @@
+%start PKEY FKEY NOT
+
+IDENTIFIER {LETTER}({LETTER}|{NUMBER})*
+LETTER [A-Za-z_]
+NUMBER [0-9]
+NUMBER_NONULL [1-9]
+LENGTH {POS_NUMBER}
+ACC {POS_NUMBER}
+SCALE {POS_NUMBER}
+POS_NUMBER {NUMBER_NONULL}({NUMBER})*
+
+GLOBALITY_PROP global|local
+TEMP_PROP temporary
+
+DATA_TYPE {STRING}|{NUM}|{DATE}
+STRING char[ ]*("("{LENGTH}")")?|varchar[ ]*("("{LENGTH}")")?
+NUM numeric[ ]*("("{ACC}(,{SCALE})?")")?|integer|float[ ]*("("{ACC}")")?|real
+DATE date|time("("{ACC}")")?
+
+%{
+#include "string.h"
+
+int i = 1;
+int err_list[100] = {0};
+
+void delete_char(char s[], int i);
+void uppercase_and_spaces(char s[]);
+void add_error(int e);
+
+%}
+
+%%
+
+[ \t]*  ;
+\n      { i++; }
+
+"create"  printf("CREATE\n");
+"table"   printf("TABLE\n");
+"global"  printf("GLOBAL\n");
+"local"   printf("LOCAL\n");
+"temporary"     printf("TEMPORARY\n");
+"primary" BEGIN PKEY;
+"foreign" BEGIN FKEY;
+<PKEY>"key" {printf("PRIMARY_KEY\n"); BEGIN 0; }
+<FKEY>"key" {printf("FOREIGN_KEY\n"); BEGIN 0; }
+<PKEY,FKEY>[^ \n] {add_error(i); yyless(0); BEGIN 0; }
+"unique" printf("UNIQUE\n");
+"not" { BEGIN NOT; }
+<NOT>"null" { printf("NOT_NULL\n"); BEGIN 0;}
+<NOT>[.]  {yyless(0); printf("NOT\n"); BEGIN 0; }
+"null" printf("NULL\n");
+"constraint" printf("CONSTRAINT\n");
+"references" printf("REFERENCES\n");
+"on" printf("ON\n");
+"commit" printf("COMMIT\n");
+"delete" printf("DELETE\n");
+"preserve" printf("PRESERVE\n");
+"rows" printf("ROWS\n");
+"update" printf("UPDATE\n");
+"cascade" printf("CASCADE\n");
+"set" printf("SET\n");
+"default" printf("DEFAULT\n");
+"no" printf("NO\n");
+"action" printf("ACTION\n");
+";" printf("SEMICOLON\n");
+
+"'"[^'\n]*"'"  {printf("STRING "); ECHO; printf("\n");}
+
+{DATA_TYPE} {printf("DATA_TYPE "); uppercase_and_spaces(yytext); ECHO; printf("\n");}
+
+"(" printf("OPEN_BR\n");
+")" printf("CLOSE_BR\n");
+"," printf("COMMA\n");
+
+{IDENTIFIER}  {printf("IDENTIFIER "); ECHO; printf("\n");}
+
+{NUMBER}({NUMBER}|{LETTER})*  add_error(i);
+%%
+
+int yywrap()
+{
+
+for (int i = 0;i<100;i++)
+if (err_list[i]!=0) printf("\n\x1b[31mОшибка распознавания лексемы в строке %d",err_list[i]);
+else break;
+
+return 1;
+}
+
+void delete_char(char s[], int i)
+{
+for (int j = i;j<yyleng-1;j++) s[j] = s[j+1];
+yyleng = yyleng - 1;
+}
+
+void uppercase_and_spaces(char s[])
+{
+for(int i = 0;i<yyleng;i++){
+if (s[i]==' ') delete_char(s,i);
+
+if (s[i]>=97 && s[i]<=122) s[i] = s[i] - 32;
+}
+}
+
+void add_error(int e)
+{
+for (int i = 0;i<100;i++)
+if (err_list[i]==0) { err_list[i] = e; break; }
+}

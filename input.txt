@@ -1,0 +1,7 @@
+CREATE TABLE Employee (
+    Id                INTEGER        NOT NULL,
+    FirstName         CHAR (20) NOT NULL,
+    LastName          CHAR (20) NOT NULL,
+    DepartamentNumber CHAR (4)   NULL,
+    CONSTRAINT primary_id PRIMARY KEY (Id)
+);
