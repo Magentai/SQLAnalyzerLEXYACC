@@ -19,4 +19,3 @@ Windows (Cygwin):
 2) Создать из входного файла с помощью lex программу на языке С:  flex -i sql_create_lexer.txt (параметр -i используется для игнорирования регистра символов входного потока)
 3) Скомпилировать эту программу:  cc lex.yy.c -o create_statement_analyzer -lfl
 В результате будет создан исполняемый файл create_statement_analyzer.exe.
-
